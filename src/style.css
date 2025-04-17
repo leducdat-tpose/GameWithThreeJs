@@ -1,4 +1,22 @@
-* { margin: 0; 
-    padding: 0; 
-    box-sizing: border-box;
+body {
+    background-color: #f1ebeb;
+}
+
+canvas {
+    display: block;
+    margin: 0 auto;
+    top: 50px;
+}
+
+.score-container {
+    top: 10px;
+    right: 10px;
+    transition: transform 0.5s 4s;
+}
+
+.score-container #score {
+    color: white;
+    font-size: 8vh;
+    font-family: 'Exo', sans-serif;
+    font-weight: 700;
 }

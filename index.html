@@ -1,14 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <script src="./src/style.css"></script>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-  </head>
-  <body>
-    <canvas id="canvas"></canvas>
-    <script type="module" src="./src/main.js"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <title>Race car game</title>
+    <script src="src/js/three.min.js"></script>
+    <script src="src/js/OrbitControls.js"></script>
+    <script src="src/js/THREEx.KeyboardState.js"></script>
+    <script src="src/js/THREEx.WindowResize.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+<div class="score-container">
+    <div id="score"></div>
+</div>
+<!--<div id="message" style="color:green; background-color: #a06cc2"></div>-->
+
+<div id="ThreeJS"></div>
+
+<script src="src/js/index.js"></script>
+</body>
 </html>
