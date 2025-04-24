@@ -152,10 +152,10 @@ function update() {
         movingCube.material.color.setHex(0x346386);
         console.log("Crash");
         if (crashId !== lastCrashId) {
-            score -= 100;
+            // score -= 100;
             lastCrashId = crashId;
         }
-
+        displayMessage();
     } else {
         //            message.innerText = "Safe";
         movingCube.material.color.setHex(0x00ff00);
