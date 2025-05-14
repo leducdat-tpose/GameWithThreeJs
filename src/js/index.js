@@ -23,17 +23,44 @@ function init() {
     var screenWidth = window.innerWidth;
     var screenHeight = window.innerHeight;
     camera = new THREE.PerspectiveCamera(45, screenWidth / screenHeight, 1, 20000);
-    camera.position.set(0, 170, 400);
+    camera.position.set(0, 200, 400);
 
     // Renderer
     renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setClearColor( 0xffffff, 1);
     renderer.setSize(screenWidth * 0.85, screenHeight * 0.85);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use BasicShadowMap for better performance
+
     container = document.getElementById("ThreeJS");
     container.appendChild(renderer.domElement);
 
     THREEx.WindowResize(renderer, camera);
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    // Directional light
+    const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+    light.position.set(200, 200, 200); // Position the light
+    light.target.position.set(0, 0, 0); // Set the target of the light
+    light.castShadow = true; // Enable shadow casting
+    light.shadow.mapSize.width = 2048; // Increase shadow resolution
+    light.shadow.mapSize.height = 2048;
+    light.shadow.camera.near = 0.1;
+    light.shadow.camera.far = 1000;
+    light.shadow.camera.left = -2000;
+    light.shadow.camera.right = 2000;
+    light.shadow.camera.top = 2000;
+    light.shadow.camera.bottom = -2000;
+    scene.add(light);
+
+    // Ground Plane to Receive Shadows
+    const groundGeometry = new THREE.PlaneGeometry(590, 10000);
+    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal
+    ground.receiveShadow = true; // Enable shadow receiving
+    // ground.castShadow = true; // Disable shadow casting
+    scene.add(ground);
 
     // 2 đường biên
     geometry = new THREE.Geometry();
@@ -57,16 +84,16 @@ function init() {
         color: 0x00ff00,
         wireframe: true
     });
-
-
-    // Đây là đối tượng người chơi
     movingCube = new THREE.Mesh(cubeGeometry, wireMaterial);
     //            movingCube = new THREE.Mesh(cubeGeometry, material);
     //            movingCube = new THREE.BoxHelper(movingCube);
     movingCube.position.set(0, 25, -20);
+    movingCube.castShadow = true; // Enable shadow casting
+    movingCube.receiveShadow = true; // Enable shadow receiving
     scene.add(movingCube);
 
-
+    // const helper = new THREE.CameraHelper( light.shadow.camera );
+    // scene.add( helper );
 }
 
 function animate() {
@@ -165,13 +192,14 @@ function update() {
         makeRandomCube();
     }
 
+    // Speed
     for (i = 0; i < cubes.length; i++) {
         if (cubes[i].position.z > camera.position.z) {
             scene.remove(cubes[i]);
             cubes.splice(i, 1);
             collideMeshList.splice(i, 1);
         } else {
-            cubes[i].position.z += 10;
+            cubes[i].position.z += 2;
         }
         //                renderer.render(scene, camera);
     }
@@ -196,17 +224,17 @@ function makeRandomCube() {
     var a = 1 * 50,
         b = 1 * 50,
         c = 1 * 50;
-    var geometry = new THREE.CubeGeometry(a, b, c);
+    var geometry = new THREE.BoxGeometry(a, b, c);
     var material = new THREE.MeshBasicMaterial({
         color: Math.random() * 0xffffff,
         size: 3
     });
 
 
-    var object = new THREE.Mesh(geometry, material);
-    var box = new THREE.BoxHelper(object);
+    var box = new THREE.Mesh(geometry, material);
+    // var box = new THREE.BoxHelper(object);
     //            box.material.color.setHex(Math.random() * 0xffffff);
-    box.material.color.setHex(0xff0000);
+    // box.material.color.setHex(0xff0000);
 
     box.position.x = getRandomArbitrary(-250, 250);
     box.position.y = 1 + b / 2;
@@ -214,7 +242,9 @@ function makeRandomCube() {
     cubes.push(box);
     box.name = "box_" + id;
     id++;
+    // Enable shadow receiving
+    box.castShadow = true; // Enable shadow casting
+    box.receiveShadow = true; 
     collideMeshList.push(box);
-
     scene.add(box);
 }
