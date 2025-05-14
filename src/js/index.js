@@ -12,6 +12,7 @@ var scoreText = document.getElementById("score");
 var id = 0;
 var crashId = " ";
 var lastCrashId = " ";
+var vision = 3;
 
 init();
 animate();
@@ -208,6 +209,12 @@ function update() {
     scoreText.innerText = "Score:" + Math.floor(score);
 
     //controls.update();
+    if (vision == 1) {
+        switchToFirstPersonView();
+    }
+    else {
+        camera.position.set(0, 200, 400);
+    }
 }
 
 
