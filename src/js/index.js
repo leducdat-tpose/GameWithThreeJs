@@ -13,6 +13,7 @@ var id = 0;
 var crashId = " ";
 var lastCrashId = " ";
 var vision = 3;
+var speed = 2;
 
 init();
 animate();
@@ -110,7 +111,7 @@ function animate() {
 
 function update() {
     var delta = clock.getDelta();
-    var moveDistance = 2;
+    var moveDistance = 3;
     //console.log(moveDistance);
     var rotateAngle = Math.PI / 2 * delta;
 
@@ -200,15 +201,22 @@ function update() {
             cubes.splice(i, 1);
             collideMeshList.splice(i, 1);
         } else {
-            cubes[i].position.z += 2;
+            cubes[i].position.z += speed;
         }
         //                renderer.render(scene, camera);
+    }
+
+    // Increase speed every 50 points
+    if ((score % 50) <= 0.1 && score !== 0) {
+        speed += 1;
     }
 
     score += 0.1;
     scoreText.innerText = "Score:" + Math.floor(score);
 
     //controls.update();
+
+    // Switch camera view
     if (vision == 1) {
         switchToFirstPersonView();
     }
