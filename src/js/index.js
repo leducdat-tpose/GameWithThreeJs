@@ -1,220 +1,288 @@
-var container, scene, camera, renderer, controls;
-var keyboard = new THREEx.KeyboardState();
-var clock = new THREE.Clock;
+// src/js/index.js
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-var movingCube;
-var collideMeshList = [];
-var cubes = [];
-var message = document.getElementById("message");
-var crash = false;
-var score = 0;
-var scoreText = document.getElementById("score");
-var id = 0;
-var crashId = " ";
-var lastCrashId = " ";
+class Game {
+    // Khởi tạo các thành phần cơ bản
+    constructor() {
+        this.scene = new THREE.Scene();
+        this.camera = null;
+        this.renderer = null;
+        this.controls = null;
+        this.keyboard = new THREEx.KeyboardState();
+        this.clock = new THREE.Clock();   // Đồng hồ đo thời gian
+        this.score = 0;
+        this.scoreElement = document.getElementById('scoreboard');  // Hiển thị điểm số
+        this.resetBtn = document.getElementById('reset-btn');  // Tham chiếu nút reset
+        this.lastScoreUpdateTime = 0;
 
-init();
-animate();
+        this.player = null;  // Đối tượng người chơi
+        this.rockModel = null;  // Vật cản
+        this.obstacles = [];  // Danh sách vật cản
+        this.colliders = [];  // Danh sách va chạm
+        this.crash = false;
 
-function init() {
-    // Scene
-    scene = new THREE.Scene();
-    // Camera
-    var screenWidth = window.innerWidth;
-    var screenHeight = window.innerHeight;
-    camera = new THREE.PerspectiveCamera(45, screenWidth / screenHeight, 1, 20000);
-    camera.position.set(0, 170, 400);
+        this.rockSpeed = 5;  // Tốc độ vật cản
+        this.rockScale = 30;  // Kích thước
 
-    // Renderer
-    renderer = new THREE.WebGLRenderer({ alpha: true });
-    renderer.setClearColor( 0xffffff, 1);
-    renderer.setSize(screenWidth * 0.85, screenHeight * 0.85);
-    container = document.getElementById("ThreeJS");
-    container.appendChild(renderer.domElement);
+        this.loader = new GLTFLoader();
 
-    THREEx.WindowResize(renderer, camera);
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-    // 2 đường biên
-    geometry = new THREE.Geometry();
-    geometry.vertices.push(new THREE.Vector3(-250, -1, -3000));
-    geometry.vertices.push(new THREE.Vector3(-300, -1, 200));
-    material = new THREE.LineBasicMaterial({
-        color: 0x66FFFF, linewidth: 5, fog: true
-    });
-    var line1 = new THREE.Line(geometry, material);
-    scene.add(line1);
-    geometry = new THREE.Geometry();
-    geometry.vertices.push(new THREE.Vector3(250, -1, -3000));
-    geometry.vertices.push(new THREE.Vector3(300, -1, 200));
-    var line2 = new THREE.Line(geometry, material);
-    scene.add(line2);
-
-
-    // Đây là đối tượng người chơi
-    var cubeGeometry = new THREE.CubeGeometry(50, 25, 60, 5, 5, 5);
-    var wireMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ff00,
-        wireframe: true
-    });
-
-
-    // Đây là đối tượng người chơi
-    movingCube = new THREE.Mesh(cubeGeometry, wireMaterial);
-    //            movingCube = new THREE.Mesh(cubeGeometry, material);
-    //            movingCube = new THREE.BoxHelper(movingCube);
-    movingCube.position.set(0, 25, -20);
-    scene.add(movingCube);
-
-
-}
-
-function animate() {
-    // Dừng màn hình khi va chạm
-    if (!crash)
-    {
-        requestAnimationFrame(animate);
-    }
-    update();
-    renderer.render(scene, camera);
-
-}
-
-function update() {
-    var delta = clock.getDelta();
-    var moveDistance = 2;
-    //console.log(moveDistance);
-    var rotateAngle = Math.PI / 2 * delta;
-
-    //            if (keyboard.pressed("A")) {
-    //                camera.rotation.z -= 0.2 * Math.PI / 180;
-    //                console.log("press A")
-    //            }
-    //            if (keyboard.pressed("D")) {
-    //                movingCube.rotation.y += rotateAngle;
-    //            }
-
-    if (keyboard.pressed("left") || keyboard.pressed("A")) {
-        if (movingCube.position.x > -270)
-            movingCube.position.x -= moveDistance;
-        // if (camera.position.x > -150) {
-        //     camera.position.x -= moveDistance * 0.6;
-        //     if (camera.rotation.z > -5 * Math.PI / 180) {
-        //         camera.rotation.z -= 0.2 * Math.PI / 180;
-        //     }
-        // }
-    }
-    if (keyboard.pressed("right") || keyboard.pressed("D")) {
-        if (movingCube.position.x < 270)
-            movingCube.position.x += moveDistance;
-        // if (camera.position.x < 150) {
-        //     camera.position.x += moveDistance * 0.6;
-        //     if (camera.rotation.z < 5 * Math.PI / 180) {
-        //         camera.rotation.z += 0.2 * Math.PI / 180;
-        //     }
-        // }
-    }
-    if (keyboard.pressed("up") || keyboard.pressed("W")) {
-        movingCube.position.z -= moveDistance;
-    }
-    if (keyboard.pressed("down") || keyboard.pressed("S")) {
-        movingCube.position.z += moveDistance;
-    }
-
-    // if (!(keyboard.pressed("left") || keyboard.pressed("right") ||
-    //     keyboard.pressed("A") || keyboard.pressed("D"))) {
-    //     delta = camera.rotation.z;
-    //     camera.rotation.z -= delta / 10;
-    // }
-
-
-    var originPoint = movingCube.position.clone();
-
-    for (var vertexIndex = 0; vertexIndex < movingCube.geometry.vertices.length; vertexIndex++) {
-        // 顶点原始坐标
-        var localVertex = movingCube.geometry.vertices[vertexIndex].clone();
-        // 顶点经过变换后的坐标
-        var globalVertex = localVertex.applyMatrix4(movingCube.matrix);
-        var directionVector = globalVertex.sub(movingCube.position);
-
-        var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-        var collisionResults = ray.intersectObjects(collideMeshList);
-        if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
-            crash = true;
-            crashId = collisionResults[0].object.name;
-            break;
+        // Thêm sự kiện cho nút reset
+        if (this.resetBtn) {
+            this.resetBtn.addEventListener('click', () => {
+                this.resetGame();
+            });
         }
-        crash = false;
+
+        this.init();
     }
 
-    if (crash) {
-        //            message.innerText = "crash";
-        movingCube.material.color.setHex(0x346386);
-        console.log("Crash");
-        if (crashId !== lastCrashId) {
-            // score -= 100;
-            lastCrashId = crashId;
+    init() {
+        this.initCamera();
+        this.initRenderer();
+        this.initControls();
+        this.initLights();
+        this.initBoundaries();
+        this.preloadRockModel(() => {
+            this.loadPlayer();
+        });
+    }
+
+    // Camera perspective với góc nhìn 45 độ
+    initCamera() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 20000);
+        this.camera.position.set(0, 170, 400);
+    }
+
+    // Tạo renderer WebGL với nền trong suốt
+    initRenderer() {
+        this.renderer = new THREE.WebGLRenderer({ alpha: true });
+        this.renderer.setClearColor(0xffffff, 1);
+        this.renderer.setSize(window.innerWidth * 0.85, window.innerHeight * 0.85);
+        document.getElementById("ThreeJS").appendChild(this.renderer.domElement);
+        THREEx.WindowResize(this.renderer, this.camera);
+    }
+
+    // Điều khiển camera với OrbitControls
+    initControls() {
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableRotate = false;
+    }
+
+    // Thêm ánh sáng để hiển thị model glb
+    initLights() {
+        const ambient = new THREE.AmbientLight(0xffffff, 5);
+        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        directional.position.set(0, 300, 500);
+        this.scene.add(ambient, directional);
+    }
+
+    // Hai đường biên
+    initBoundaries() {
+        const mat = new THREE.LineBasicMaterial({ color: 0x66FFFF });
+        const mkLine = x => {
+            const pts = [
+                new THREE.Vector3(x, -1, -3000),
+                new THREE.Vector3(x + (x > 0 ? 50 : -50), -1, 200)
+            ];
+            this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+        };
+        mkLine(-250);
+        mkLine(250);
+    }
+
+    // Tải model vật cản (rock)
+    preloadRockModel(onLoaded) {
+        this.loader.load('./assets/Rock.glb', (gltf) => {
+            this.rockModel = gltf.scene;
+            this.rockModel.scale.set(this.rockScale, this.rockScale, this.rockScale);
+
+            this.rockModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.material.side = THREE.DoubleSide;
+                }
+            });
+
+            console.log('Rock model loaded');
+            if (onLoaded) onLoaded();
+        }, undefined, (error) => {
+            console.error('Lỗi khi tải Rock.glb:', error);
+        });
+    }
+
+    // Tải model người chơi (car)
+    loadPlayer() {
+        this.loader.load('./assets/CAR_Model.glb', gltf => {
+            this.player = gltf.scene;
+            this.player.scale.set(0.25, 0.25, 0.25);
+            this.player.position.set(0, -25, -20);
+            this.player.rotation.y = Math.PI; // xoay model đúng hướng di chuyển
+        
+            this.scene.add(this.player);
+            this.animate();
+        });
+    }
+
+    animate() {
+        if (!this.crash) {
+            requestAnimationFrame(this.animate.bind(this)); // Chỉ request frame khi chưa crash
         }
-        displayMessage();
-    } else {
-        //            message.innerText = "Safe";
-        movingCube.material.color.setHex(0x00ff00);
-    }
-
-    if (Math.random() < 0.03 && cubes.length < 30) {
-        makeRandomCube();
-    }
-
-    for (i = 0; i < cubes.length; i++) {
-        if (cubes[i].position.z > camera.position.z) {
-            scene.remove(cubes[i]);
-            cubes.splice(i, 1);
-            collideMeshList.splice(i, 1);
-        } else {
-            cubes[i].position.z += 10;
+        this.update();
+        this.renderer.render(this.scene, this.camera);
+        // Chỉ gọi showGameOver 1 lần
+        if (this.crash && !this.gameOverShown) {
+            this.gameOverShown = true; // Thêm biến cờ
+            this.showGameOver();
         }
-        //                renderer.render(scene, camera);
     }
 
-    score += 0.1;
-    scoreText.innerText = "Score:" + Math.floor(score);
 
-    //controls.update();
+    update() {
+        const delta = this.clock.getDelta();
+
+        if (this.crash) return;  // Dừng update điểm khi crash
+
+        this.lastScoreUpdateTime = (this.lastScoreUpdateTime || 0) + delta;
+        if (this.lastScoreUpdateTime > 0.1) {
+            this.score += 1;
+            this.lastScoreUpdateTime = 0;
+
+            if (this.scoreElement) {
+                this.scoreElement.innerText = `Score: ${this.score}`;
+            }
+        }
+
+        // Xử lý di chuyển từ bàn phím
+        const move = 2;
+        if (this.player) {
+            if (this.keyboard.pressed("left") || this.keyboard.pressed("A")) {
+                if (this.player.position.x > -270) this.player.position.x -= move;
+            }
+            if (this.keyboard.pressed("right") || this.keyboard.pressed("D")) {
+                if (this.player.position.x < 270) this.player.position.x += move;
+            }
+            if (this.keyboard.pressed("up") || this.keyboard.pressed("W")) {
+                if (this.player.position.z > -1000) this.player.position.z -= move * 2;
+            }
+            if (this.keyboard.pressed("down") || this.keyboard.pressed("S")) {
+                if (this.player.position.z < 500) this.player.position.z += move * 2;
+            }
+        }
+
+        this.camera.position.set(0, 170, 400);
+        this.controls.target.set(0, 25, -20);
+        this.controls.update();
+
+        // Tạo vật cản ngẫu nhiên và xóa khi rời khỏi màn hình
+        if (this.rockModel && Math.random() < 0.03 && this.obstacles.length < 30) {
+            this.spawnRock(); // gọi hàm tạo vật cản
+        }
+
+        for (let i = 0; i < this.obstacles.length; i++) {
+            const rock = this.obstacles[i];
+            rock.position.z += this.rockSpeed;  
+
+            if (rock.position.z > this.camera.position.z) {
+                this.scene.remove(rock);
+                this.obstacles.splice(i, 1);
+                this.colliders.splice(i, 1);
+                i--;
+            }
+        }
+
+        // Kiểm tra va chạm 
+        if (this.player) {
+            const playerBox = new THREE.Box3().setFromObject(this.player);
+
+            // Hiển thị bounding box để quan sát
+            // const helper = new THREE.Box3Helper(playerBox, 0xff0000);
+            // this.scene.add(helper);
+            
+            // // Xóa helper cũ ở frame tiếp theo
+            // setTimeout(() => {
+            //     this.scene.remove(helper);
+            // }, 0);
+
+            this.crash = this.colliders.some(obj => {
+                const box = new THREE.Box3().setFromObject(obj);
+                const isColliding = playerBox.intersectsBox(box);
+                if (isColliding) console.log("Va chạm xảy ra!");
+                return isColliding;
+            });
+        }
+    }
+
+    showGameOver() {
+        console.log("Hàm showGameOver được gọi"); // Kiểm tra hàm có được gọi không
+        if (this.scoreElement) {
+            console.log("Cập nhật scoreElement");
+            this.scoreElement.innerHTML = `Game Over. Final Score: ${this.score}`;
+        }
+        if (this.resetBtn) {
+            console.log("Hiển thị nút reset");
+            this.resetBtn.style.display = 'inline-block';
+        }
+    }
+
+    resetGame() {
+        // Ẩn nút reset
+        if (this.resetBtn) {
+            this.resetBtn.style.display = 'none';
+        }
+        // Reset điểm và trạng thái va chạm
+        this.score = 0;
+        this.crash = false;
+        if (this.scoreElement) {
+            this.scoreElement.innerText = 'Score: 0';
+        }
+
+        // Xóa các obstacles hiện tại
+        this.obstacles.forEach(obj => this.scene.remove(obj));
+        this.obstacles = [];
+        this.colliders = [];
+
+        // Reset vị trí player về mặc định
+        if (this.player) {
+            this.player.position.set(0, -25, -20);
+        }
+
+        this.clock.start();
+
+        // Tiếp tục chạy lại animation
+        this.animate();
+    }
+
+    // Hàm tạo vật cản 
+    spawnRock() {
+        if (!this.rockModel) {
+            console.warn("Rock model chưa load xong");
+            return;
+        }
+
+        const OBSTACLE_WIDTH = 50;
+        const minX = -250 + OBSTACLE_WIDTH / 2;
+        const maxX = 250 - OBSTACLE_WIDTH / 2;
+
+        const rock = this.rockModel.clone(true);
+        rock.position.set(
+            THREE.MathUtils.randFloat(minX, maxX),
+            0,
+            -500
+        );
+
+        rock.scale.set(this.rockScale, this.rockScale, this.rockScale);
+
+        this.scene.add(rock);
+        this.obstacles.push(rock);
+        this.colliders.push(rock);
+    }
 }
 
-
-function getRandomArbitrary(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-// Chướng ngại vật
-function makeRandomCube() {
-    var a = 1 * 50,
-        b = 1 * 50,
-        c = 1 * 50;
-    var geometry = new THREE.CubeGeometry(a, b, c);
-    var material = new THREE.MeshBasicMaterial({
-        color: Math.random() * 0xffffff,
-        size: 3
-    });
-
-
-    var object = new THREE.Mesh(geometry, material);
-    var box = new THREE.BoxHelper(object);
-    //            box.material.color.setHex(Math.random() * 0xffffff);
-    box.material.color.setHex(0xff0000);
-
-    box.position.x = getRandomArbitrary(-250, 250);
-    box.position.y = 1 + b / 2;
-    box.position.z = -1500;
-    cubes.push(box);
-    box.name = "box_" + id;
-    id++;
-    collideMeshList.push(box);
-
-    scene.add(box);
-}
+window.addEventListener('DOMContentLoaded', () => {
+    new Game();
+});
