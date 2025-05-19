@@ -195,12 +195,10 @@ class Game {
     animate() {
         if (!this.crash) {
             requestAnimationFrame(this.animate.bind(this)); // Chỉ request frame khi chưa crash
+            this.update();
+            this.renderer.render(this.scene, this.camera);
         }
-        this.update();
-        this.renderer.render(this.scene, this.camera);
-        // Chỉ gọi showGameOver 1 lần
-        if (this.crash && !this.gameOverShown) {
-            this.gameOverShown = true; // Thêm biến cờ
+        else {
             this.showGameOver();
         }
     }
