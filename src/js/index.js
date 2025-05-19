@@ -62,6 +62,8 @@ class Game {
         this.renderer = new THREE.WebGLRenderer({ alpha: true });
         this.renderer.setClearColor(0xffffff, 1);
         this.renderer.setSize(window.innerWidth * 0.85, window.innerHeight * 0.85);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById("ThreeJS").appendChild(this.renderer.domElement);
         THREEx.WindowResize(this.renderer, this.camera);
     }
@@ -74,10 +76,35 @@ class Game {
 
     // Thêm ánh sáng để hiển thị model glb
     initLights() {
-        const ambient = new THREE.AmbientLight(0xffffff, 5);
-        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-        directional.position.set(0, 300, 500);
-        this.scene.add(ambient, directional);
+        // const ambient = new THREE.AmbientLight(0xffffff, 5);
+        // const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        // directional.position.set(0, 300, 500);
+        // this.scene.add(ambient, directional);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 1);
+        this.scene.add(ambient);
+
+        const light = new THREE.DirectionalLight(0xFFFFFF, 1.2); // Slightly stronger
+        light.position.set(200, 200, 200);
+        light.target.position.set(0, 0, 0);
+        light.castShadow = true;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        light.shadow.camera.near = 0.1;
+        light.shadow.camera.far = 1000;
+        light.shadow.camera.left = -2000;
+        light.shadow.camera.right = 2000;
+        light.shadow.camera.top = 2000;
+        light.shadow.camera.bottom = -2000;
+        this.scene.add(light);
+
+        const groundGeometry = new THREE.PlaneGeometry(650, 10000);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        ground.position.set(0, -20, 0);
+        this.scene.add(ground);
     }
 
     // Hai đường biên
@@ -118,14 +145,23 @@ class Game {
     // Tải model người chơi (car)
     loadPlayer() {
         this.loader.load('./assets/CAR_Model.glb', gltf => {
-            this.player = gltf.scene;
-            this.player.scale.set(0.25, 0.25, 0.25);
-            this.player.position.set(0, -25, -20);
-            this.player.rotation.y = Math.PI; // xoay model đúng hướng di chuyển
-        
-            this.scene.add(this.player);
-            this.animate();
+        this.player = gltf.scene;
+        this.player.scale.set(0.25, 0.25, 0.25);
+        this.player.position.set(0, -25, -20);
+        this.player.rotation.y = Math.PI; // xoay model đúng hướng di chuyển
+
+        // Ensure all meshes in the player model cast and receive shadows
+        this.player.traverse(child => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                if (child.material) child.material.side = THREE.DoubleSide;
+            }
         });
+
+        this.scene.add(this.player);
+        this.animate();
+    });
     }
 
     animate() {
