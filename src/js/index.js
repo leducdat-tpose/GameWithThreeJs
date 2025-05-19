@@ -25,6 +25,7 @@ class Game {
 
         this.rockSpeed = 5;  // Tốc độ vật cản
         this.rockScale = 30;  // Kích thước
+        this.vision = 3;
 
         this.loader = new GLTFLoader();
 
@@ -34,6 +35,13 @@ class Game {
                 this.resetGame();
             });
         }
+
+        // Thêm sự kiện cho nút "C" để chuyển đổi góc nhìn
+        document.addEventListener("keydown", (event) => {
+    if ((event.key === "C" || event.key === "c")) {
+        this.vision = this.vision === 3 ? 1 : 3;
+    }
+});
 
         this.init();
     }
@@ -164,6 +172,26 @@ class Game {
     });
     }
 
+    switchCamera() {
+        if (this.vision === 1 && this.player) {
+            this.camera.position.set(
+                this.player.position.x,
+                this.player.position.y + 20,
+                this.player.position.z - 40 
+            );
+            // Set the point that the camera will always look at
+            this.controls.target.set(
+                this.player.position.x,
+                this.player.position.y + 20,
+                this.player.position.z - 200
+            ); 
+        } else {
+            this.camera.position.set(0, 170, 400);
+            this.controls.target.set(0, 0, 0);   
+        }
+        this.controls.update();
+    }
+
     animate() {
         if (!this.crash) {
             requestAnimationFrame(this.animate.bind(this)); // Chỉ request frame khi chưa crash
@@ -210,9 +238,9 @@ class Game {
             }
         }
 
-        this.camera.position.set(0, 170, 400);
-        this.controls.target.set(0, 25, -20);
-        this.controls.update();
+        // this.camera.position.set(0, 170, 400);
+        // this.controls.target.set(0, 25, -20);
+        // this.controls.update();
 
         // Tạo vật cản ngẫu nhiên và xóa khi rời khỏi màn hình
         if (this.rockModel && Math.random() < 0.03 && this.obstacles.length < 30) {
@@ -251,6 +279,8 @@ class Game {
                 return isColliding;
             });
         }
+
+        this.switchCamera();
     }
 
     showGameOver() {
