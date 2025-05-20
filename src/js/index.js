@@ -247,6 +247,7 @@ class Game {
 
         for (let i = 0; i < this.obstacles.length; i++) {
             const rock = this.obstacles[i];
+            this.DrawBoxDebug(rock);
             rock.position.z += this.rockSpeed;  
 
             if (rock.position.z > this.camera.position.z) {
@@ -261,15 +262,8 @@ class Game {
         if (this.player) {
             const playerBox = new THREE.Box3().setFromObject(this.player);
 
-            // Hiển thị bounding box để quan sát
-            // const helper = new THREE.Box3Helper(playerBox, 0xff0000);
-            // this.scene.add(helper);
+            this.DrawBoxDebug(this.player);
             
-            // // Xóa helper cũ ở frame tiếp theo
-            // setTimeout(() => {
-            //     this.scene.remove(helper);
-            // }, 0);
-
             this.crash = this.colliders.some(obj => {
                 const box = new THREE.Box3().setFromObject(obj);
                 const isColliding = playerBox.intersectsBox(box);
@@ -279,6 +273,20 @@ class Game {
         }
 
         this.switchCamera();
+    }
+
+    /**
+    * This function use to draw box debug.
+    * Can use to visualize collider box
+    */
+    DrawBoxDebug(obj) {
+        if(!obj) return;
+        const DebugBox = new THREE.Box3().setFromObject(obj);
+        const helper = new THREE.Box3Helper(DebugBox, 0xff0000);
+        this.scene.add(helper);
+        setTimeout(() => {
+            this.scene.remove(helper);
+        }, 0);
     }
 
     showGameOver() {
@@ -351,4 +359,3 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     new Game();
 });
-
