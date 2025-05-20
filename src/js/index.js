@@ -149,7 +149,7 @@ class Game {
             console.error('Lỗi khi tải Rock.glb:', error);
         });
     }
-
+  
     // Tải model người chơi (car)
     loadPlayer() {
         this.loader.load('./assets/CAR_Model.glb', gltf => {
@@ -290,6 +290,7 @@ class Game {
         if (this.resetBtn) {
             console.log("Hiển thị nút reset");
             this.resetBtn.style.display = 'inline-block';
+
         }
     }
 
@@ -320,7 +321,7 @@ class Game {
         // Tiếp tục chạy lại animation
         this.animate();
     }
-
+  
     // Hàm tạo vật cản 
     spawnRock() {
         if (!this.rockModel) {
@@ -350,3 +351,4 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     new Game();
 });
+
