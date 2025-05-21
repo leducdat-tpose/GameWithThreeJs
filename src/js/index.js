@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
 class Game {
     // Khởi tạo các thành phần cơ bản
     constructor() {
@@ -18,6 +17,7 @@ class Game {
         this.lastScoreUpdateTime = 0;
 
         this.player = null;  // Đối tượng người chơi
+        this.vehicleType = null; // Loại xe
         this.rockModel = null;  // Vật cản
         this.obstacles = [];  // Danh sách vật cản
         this.colliders = [];  // Danh sách va chạm
@@ -52,10 +52,14 @@ class Game {
         this.initControls();
         this.initLights();
         this.initBoundaries();
-        this.preloadRockModel(() => {
-            this.loadPlayer();
+        this.preloadRockModel();
+
+        // Chờ người dùng chọn xe
+        this.selectPlayer((vehicleType) => {
+            this.loadPlayer(vehicleType);
         });
     }
+
 
     // Camera perspective với góc nhìn 45 độ
     initCamera() {
@@ -149,28 +153,82 @@ class Game {
             console.error('Lỗi khi tải Rock.glb:', error);
         });
     }
-  
-    // Tải model người chơi (car)
-    loadPlayer() {
-        this.loader.load('./assets/CAR_Model.glb', gltf => {
-        this.player = gltf.scene;
-        this.player.scale.set(0.25, 0.25, 0.25);
-        this.player.position.set(0, -25, -20);
-        this.player.rotation.y = Math.PI; // xoay model đúng hướng di chuyển
+    selectPlayer(onSelected) {
+        const carBtn = document.getElementById('car');
+        const busBtn = document.getElementById('bus');
+        const selectUI = document.getElementById('select-car');
 
-        // Ensure all meshes in the player model cast and receive shadows
-        this.player.traverse(child => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                if (child.material) child.material.side = THREE.DoubleSide;
-            }
+        carBtn.addEventListener('click', () => {
+            this.vehicleType = 'car';
+            selectUI.style.display = 'none';
+            if (onSelected) onSelected(this.vehicleType);
         });
 
-        this.scene.add(this.player);
-        this.animate();
-    });
+        busBtn.addEventListener('click', () => {
+            this.vehicleType = 'bus';
+            selectUI.style.display = 'none';
+            if (onSelected) onSelected(this.vehicleType);
+        });
     }
+
+
+    // Tải model người chơi (car)
+    loadPlayer(vehicleType) {
+        let modelPath = '';
+
+        if (vehicleType === 'car') {
+            modelPath = './assets/CAR.glb';
+            this.loader.load(modelPath, gltf => {
+            this.player = gltf.scene;
+            this.player.scale.set(0.25, 0.25, 0.25);
+            this.player.position.set(0, -20, -20);
+            this.player.rotation.y = Math.PI;
+            //this.player.rotation.x = Math.PI / 2;
+
+            this.player.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) child.material.side = THREE.DoubleSide;
+                }
+            });
+
+            this.scene.add(this.player);
+            this.animate();
+        }, undefined, error => {
+            console.error('Lỗi khi tải model:', error);
+        });
+
+        } else if (vehicleType === 'bus') {
+            modelPath = './assets/SCHOOL_BUS.glb';
+            this.loader.load(modelPath, gltf => {
+            this.player = gltf.scene;
+            this.player.scale.set(1, 1, 1);
+            this.player.position.set(0, -20, -20);
+            this.player.rotation.y = Math.PI;
+            this.player.rotation.x = Math.PI / 2;
+
+            this.player.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) child.material.side = THREE.DoubleSide;
+                }
+            });
+
+            this.scene.add(this.player);
+            this.animate();
+        }, undefined, error => {
+            console.error('Lỗi khi tải model:', error);
+        });
+
+
+        } else {
+            console.error('Loại xe không hợp lệ!');
+            return;
+        }
+    }
+
 
     switchCamera() {
         if (this.vision === 1 && this.player) {
@@ -351,4 +409,5 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     new Game();
 });
+
 
