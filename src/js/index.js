@@ -51,7 +51,7 @@ class Game {
         this.initRenderer();
         this.initControls();
         this.initLights();
-        this.initBoundaries();
+        this.initGround();
         this.preloadRockModel();
 
         // Chờ người dùng chọn xe
@@ -88,50 +88,82 @@ class Game {
 
     // Thêm ánh sáng để hiển thị model glb
     initLights() {
-        // const ambient = new THREE.AmbientLight(0xffffff, 5);
-        // const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-        // directional.position.set(0, 300, 500);
-        // this.scene.add(ambient, directional);
-
-        const ambient = new THREE.AmbientLight(0xffffff, 1);
+        // Ánh sáng môi trường: rất sáng, màu trắng
+        const ambient = new THREE.AmbientLight(0xffffff, 1.5); // tăng intensity lên 1.5
         this.scene.add(ambient);
 
-        const light = new THREE.DirectionalLight(0xFFFFFF, 1.2); // Slightly stronger
-        light.position.set(200, 200, 200);
-        light.target.position.set(0, 0, 0);
-        light.castShadow = true;
-        light.shadow.mapSize.width = 2048;
-        light.shadow.mapSize.height = 2048;
-        light.shadow.camera.near = 0.1;
-        light.shadow.camera.far = 1000;
-        light.shadow.camera.left = -2000;
-        light.shadow.camera.right = 2000;
-        light.shadow.camera.top = 2000;
-        light.shadow.camera.bottom = -2000;
-        this.scene.add(light);
+        // Directional light - ánh sáng chính như mặt trời
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); // tăng cường độ sáng
+        directionalLight.position.set(300, 400, 300);
+        directionalLight.target.position.set(0, 0, 0);
 
-        const groundGeometry = new THREE.PlaneGeometry(650, 10000);
-        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        ground.position.set(0, -20, 0);
-        this.scene.add(ground);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 4096;   // nâng độ phân giải shadow cho nét hơn
+        directionalLight.shadow.mapSize.height = 4096;
+        directionalLight.shadow.camera.near = 0.1;
+        directionalLight.shadow.camera.far = 1000;
+
+        directionalLight.shadow.camera.left = -1000;
+        directionalLight.shadow.camera.right = 1000;
+        directionalLight.shadow.camera.top = 1000;
+        directionalLight.shadow.camera.bottom = -1000;
+
+        this.scene.add(directionalLight);
+        this.scene.add(directionalLight.target);
+
+        // Thêm 1 điểm sáng để làm sáng các vùng tối hơn
+        const pointLight = new THREE.PointLight(0xffffff, 0.5);
+        pointLight.position.set(-200, 200, 200);
+        this.scene.add(pointLight);
+
+        // Nếu background của bạn là plane hoặc mesh, bạn nên set vật liệu (material) có emissive hoặc color sáng
+        // Ví dụ:
+        // this.backgroundMesh.material.emissive = new THREE.Color(0xffffff);
+        // this.backgroundMesh.material.emissiveIntensity = 0.7;
     }
+
+
+    initGround() {
+        const loader = new GLTFLoader();
+
+        loader.load('./assets/road.glb', (gltf) => {
+            this.road1 = gltf.scene.clone();
+            this.road2 = gltf.scene.clone();
+
+            // Cài đặt đổ bóng và chỉnh sáng mặt đường
+            [this.road1, this.road2].forEach(road => {
+                road.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                road.scale.set(150, 150, 150);
+            });
+
+            // Đặt vị trí 2 đoạn road nối tiếp nhau theo trục Z
+            this.road1.position.set(0, -200, 0);
+            this.road2.position.set(0, -200, 3000);
+
+            this.scene.add(this.road1);
+            this.scene.add(this.road2);
+        });
+    }
+
 
     // Hai đường biên
-    initBoundaries() {
-        const mat = new THREE.LineBasicMaterial({ color: 0x66FFFF });
-        const mkLine = x => {
-            const pts = [
-                new THREE.Vector3(x, -1, -3000),
-                new THREE.Vector3(x + (x > 0 ? 50 : -50), -1, 200)
-            ];
-            this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
-        };
-        mkLine(-250);
-        mkLine(250);
-    }
+    // initBoundaries() {
+    //     const mat = new THREE.LineBasicMaterial({ color: 0x66FFFF });
+    //     const mkLine = x => {
+    //         const pts = [
+    //             new THREE.Vector3(x, -1, -3000),
+    //             new THREE.Vector3(x + (x > 0 ? 50 : -50), -1, 200)
+    //         ];
+    //         this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+    //     };
+    //     mkLine(-250);
+    //     mkLine(250);
+    // }
 
     // Tải model vật cản (rock)
     preloadRockModel(onLoaded) {
@@ -181,7 +213,7 @@ class Game {
             this.loader.load(modelPath, gltf => {
             this.player = gltf.scene;
             this.player.scale.set(0.25, 0.25, 0.25);
-            this.player.position.set(0, -20, -20);
+            this.player.position.set(0, -30, -20);
             this.player.rotation.y = Math.PI;
             //this.player.rotation.x = Math.PI / 2;
 
@@ -204,7 +236,7 @@ class Game {
             this.loader.load(modelPath, gltf => {
             this.player = gltf.scene;
             this.player.scale.set(1, 1, 1);
-            this.player.position.set(0, -20, -20);
+            this.player.position.set(0, -30, -20);
             this.player.rotation.y = Math.PI;
             this.player.rotation.x = Math.PI / 2;
 
@@ -277,6 +309,24 @@ class Game {
             }
         }
 
+        // đường đi
+        if (this.road1 && this.road2) {
+
+            this.road1.position.z += this.rockSpeed;
+            this.road2.position.z += this.rockSpeed;
+
+            const resetZ = 0;       
+            const roadLength = 3000; 
+
+            if (this.road1.position.z > resetZ) {
+                this.road1.position.z = this.road2.position.z - roadLength;
+            }
+
+            if (this.road2.position.z > resetZ) {
+                this.road2.position.z = this.road1.position.z - roadLength;
+            }
+        }
+
         // Xử lý di chuyển từ bàn phím
         const move = 2;
         if (this.player) {
@@ -299,7 +349,7 @@ class Game {
         // this.controls.update();
 
         // Tạo vật cản ngẫu nhiên và xóa khi rời khỏi màn hình
-        if (this.rockModel && Math.random() < 0.03 && this.obstacles.length < 30) {
+        if (this.rockModel && Math.random() < 0.03 && this.obstacles.length < 10) {
             this.spawnRock(); // gọi hàm tạo vật cản
         }
 
@@ -392,13 +442,19 @@ class Game {
         const maxX = 250 - OBSTACLE_WIDTH / 2;
 
         const rock = this.rockModel.clone(true);
-        rock.position.set(
-            THREE.MathUtils.randFloat(minX, maxX),
-            0,
-            -500
-        );
 
-        rock.scale.set(this.rockScale, this.rockScale, this.rockScale);
+        const minScale = this.rockScale * 0.5;
+        const maxScale = this.rockScale * 3;
+        const randomScale = THREE.MathUtils.randFloat(minScale, maxScale);
+
+        rock.scale.set(randomScale, randomScale, randomScale);
+
+        const baseY = -30;
+        const baseScale = this.rockScale;
+        rock.position.y = baseY - (baseScale - randomScale) * 0.5;
+
+        rock.position.x = THREE.MathUtils.randFloat(minX, maxX);
+        rock.position.z = -3000;
 
         this.scene.add(rock);
         this.obstacles.push(rock);
