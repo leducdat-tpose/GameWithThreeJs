@@ -18,42 +18,42 @@
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
- <div id="scoreboard" 
-        style="position: fixed;
-            top: 10px;
-            left: 10px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 8px 16px;
-            border-radius: 6px;
-            z-index: 1000;">
+ <div id="scoreboard">
+<!--        style="position: fixed;-->
+<!--            top: 10px;-->
+<!--            left: 10px;-->
+<!--            font-size: 24px;-->
+<!--            font-weight: bold;-->
+<!--            color: #000;-->
+<!--            background: rgba(255, 255, 255, 0.8);-->
+<!--            padding: 8px 16px;-->
+<!--            border-radius: 6px;-->
+<!--            z-index: 1000;"-->
         Score: 0
     </div>
 
-    <!-- Nút reset ĐẶT RIÊNG -->
-    <button id="reset-btn" 
-        style="display: none;
-            position: fixed;
-            top: 60px;  /* Điều chỉnh vị trí dưới scoreboard */
-            left: 10px;
-            padding: 5px 10px;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 1000;">
-        Chơi lại
-    </button>
-<div id="select-car"
-    style="display: flex;
-           justify-content: center; 
-           align-items: center;    
-           gap: 10px;              
-           height: 100vh;"> 
-    
-    <button id ="car">Car</button>
-    <button id ="bus">Bus</button>
-</div>
+<!--    &lt;!&ndash; Nút reset ĐẶT RIÊNG &ndash;&gt;-->
+<!--    <button id="reset-btn" -->
+<!--        style="display: none;-->
+<!--            position: fixed;-->
+<!--            top: 60px;  /* Điều chỉnh vị trí dưới scoreboard */-->
+<!--            left: 10px;-->
+<!--            padding: 5px 10px;-->
+<!--            font-size: 16px;-->
+<!--            cursor: pointer;-->
+<!--            z-index: 1000;">-->
+<!--        Chơi lại-->
+<!--    </button>-->
+
+ <button id="reset-btn" style="display: none;">Play Again</button>
+ 
+ <div id="select-car" class="vehicle-selection">
+     <h2>Select Your Vehicle</h2>
+     <div class="vehicle-buttons">
+         <button id="car" class="vehicle-btn">🚗 Car</button>
+         <button id="bus" class="vehicle-btn">🚌 Bus</button>
+     </div>
+ </div>
 <!--<div id="message" style="color:green; background-color: #a06cc2"></div>-->
 <div id="ThreeJS"></div>
 <script src="src/js/selectCar.js"></script>
