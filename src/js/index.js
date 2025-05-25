@@ -465,5 +465,3 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     new Game();
 });
-
-
