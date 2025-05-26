@@ -14,6 +14,7 @@ class Game {
         this.score = 0;
         this.scoreElement = document.getElementById('scoreboard');  // Hiển thị điểm số
         this.resetBtn = document.getElementById('reset-btn');  // Tham chiếu nút reset
+        this.menuBtn = document.getElementById('menu-btn');  // Tham chiếu nút menu
         this.lastScoreUpdateTime = 0;
 
         this.player = null;  // Đối tượng người chơi
@@ -22,6 +23,8 @@ class Game {
         this.obstacles = [];  // Danh sách vật cản
         this.colliders = [];  // Danh sách va chạm
         this.crash = false;
+        this.gameInitialized = false; // Theo dõi trạng thái khởi tạo
+        this.animationId = null; // Để quản lý animation loop
 
         this.rockSpeed = 5;  // Tốc độ vật cản
         this.rockScale = 30;  // Kích thước
@@ -33,6 +36,13 @@ class Game {
         if (this.resetBtn) {
             this.resetBtn.addEventListener('click', () => {
                 this.resetGame();
+            });
+        }
+
+        // Thêm sự kiện cho nút menu
+        if (this.menuBtn) {
+            this.menuBtn.addEventListener('click', () => {
+                this.menuGame();
             });
         }
 
@@ -51,15 +61,30 @@ class Game {
     }
 
     init() {
-        this.initCamera();
-        this.initRenderer();
-        this.initControls();
+        // Chỉ khởi tạo renderer một lần
+        if (!this.gameInitialized) {
+            this.initCamera();
+            this.initRenderer();
+            this.initControls();
+            this.gameInitialized = true;
+        } else {
+            // Reset camera về vị trí ban đầu
+            this.resetCamera();
+        }
+        
         this.initLights();
         this.initGround();
         this.preloadRockModel();
         this.scoreElement.style.display = 'flex';  // Hiển thị bảng điểm  
+        document.getElementById("ThreeJS").style.display = 'flex';
     }
 
+    // Phương thức mới để reset camera
+    resetCamera() {
+        this.camera.position.set(0, 170, 400);
+        this.controls.target.set(0, 0, 0);
+        this.controls.update();
+    }
 
     // Camera perspective với góc nhìn 45 độ
     initCamera() {
@@ -88,6 +113,15 @@ class Game {
 
     // Thêm ánh sáng để hiển thị model glb
     initLights() {
+        // Xóa ánh sáng cũ trước khi thêm mới
+        const lightsToRemove = [];
+        this.scene.traverse((object) => {
+            if (object.isLight) {
+                lightsToRemove.push(object);
+            }
+        });
+        lightsToRemove.forEach(light => this.scene.remove(light));
+
         // Ánh sáng môi trường: rất sáng, màu trắng
         const ambient = new THREE.AmbientLight(0xffffff, 1.5); // tăng intensity lên 1.5
         this.scene.add(ambient);
@@ -124,6 +158,16 @@ class Game {
 
 
     initGround() {
+        // Xóa đường cũ nếu có
+        if (this.road1) {
+            this.scene.remove(this.road1);
+            this.road1 = null;
+        }
+        if (this.road2) {
+            this.scene.remove(this.road2);
+            this.road2 = null;
+        }
+
         const loader = new GLTFLoader();
 
         loader.load('./assets/road.glb', (gltf) => {
@@ -190,13 +234,19 @@ class Game {
         const busBtn = document.getElementById('bus');
         const selectUI = document.getElementById('select-car');
 
-        carBtn.addEventListener('click', () => {
+        // Xóa event listeners cũ để tránh duplicate
+        const newCarBtn = carBtn.cloneNode(true);
+        const newBusBtn = busBtn.cloneNode(true);
+        carBtn.parentNode.replaceChild(newCarBtn, carBtn);
+        busBtn.parentNode.replaceChild(newBusBtn, busBtn);
+
+        newCarBtn.addEventListener('click', () => {
             this.vehicleType = 'car';
             selectUI.style.display = 'none';
             if (onSelected) onSelected(this.vehicleType);
         });
 
-        busBtn.addEventListener('click', () => {
+        newBusBtn.addEventListener('click', () => {
             this.vehicleType = 'bus';
             selectUI.style.display = 'none';
             if (onSelected) onSelected(this.vehicleType);
@@ -206,6 +256,12 @@ class Game {
 
     // Tải model người chơi (car)
     loadPlayer(vehicleType) {
+        // Xóa player cũ nếu có
+        if (this.player) {
+            this.scene.remove(this.player);
+            this.player = null;
+        }
+
         let modelPath = '';
 
         if (vehicleType === 'car') {
@@ -398,15 +454,28 @@ class Game {
         if (this.resetBtn) {
             console.log("Hiển thị nút reset");
             this.resetBtn.style.display = 'inline-block';
-
+        }
+        if (this.menuBtn) {
+            console.log("Hiển thị nút menu");
+            this.menuBtn.style.display = 'inline-block';
         }
     }
 
     resetGame() {
-        // Ẩn nút reset
+        // Dừng animation loop hiện tại
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+
+        // Ẩn nút reset và menu
         if (this.resetBtn) {
             this.resetBtn.style.display = 'none';
         }
+        if (this.menuBtn) {
+            this.menuBtn.style.display = 'none';
+        }
+
         // Reset điểm và trạng thái va chạm
         this.score = 0;
         this.crash = false;
@@ -428,6 +497,47 @@ class Game {
 
         // Tiếp tục chạy lại animation
         this.animate();
+    }
+
+    menuGame() {
+        // Dừng animation loop hiện tại
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+
+        // Ẩn các nút và scoreboard
+        if (this.menuBtn) {
+            this.menuBtn.style.display = 'none';
+        }
+        if (this.resetBtn) {
+            this.resetBtn.style.display = 'none';
+        }
+        if (this.scoreElement) {
+            this.scoreElement.style.display = 'none';
+        }
+
+        // Reset tất cả trạng thái game
+        this.score = 0;
+        this.crash = false;
+        this.lastScoreUpdateTime = 0;
+        document.getElementById("ThreeJS").style.display = 'none';
+
+        // Xóa tất cả obstacles
+        this.obstacles.forEach(obj => this.scene.remove(obj));
+        this.obstacles = [];
+        this.colliders = [];
+
+        // Hiển thị lại menu chọn xe
+        const selectUI = document.getElementById('select-car');
+        selectUI.style.display = 'flex';
+
+        // Cho phép người chơi chọn xe lại
+        this.selectPlayer((vehicleType) => {
+            this.vehicleType = vehicleType;
+            this.loadPlayer(vehicleType);
+            this.init();  // Khởi tạo lại game với xe mới
+        });
     }
   
     // Hàm tạo vật cản 

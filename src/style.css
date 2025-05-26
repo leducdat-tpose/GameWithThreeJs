@@ -184,11 +184,12 @@ h2 {
     transform: translateY(0);
 }
 
-#reset-btn {
+#reset-btn, #menu-btn {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    min-width: 220px;
     padding: 15px 35px;
     font-size: 18px;
     font-weight: 600;
@@ -205,7 +206,15 @@ h2 {
     overflow: hidden;
 }
 
-#reset-btn::before {
+#reset-btn {
+    margin-top: -40px; /* Slightly above menu */
+}
+
+#menu-btn {
+    margin-top: 40px; /* Slightly below reset */
+}
+
+#reset-btn::before, #menu-btn::before {
     content: '';
     position: absolute;
     top: 0;
@@ -217,16 +226,16 @@ h2 {
     z-index: -1;
 }
 
-#reset-btn:hover {
+#reset-btn:hover, #menu-btn:hover {
     transform: translate(-50%, -50%) scale(1.05);
     box-shadow: 0 15px 30px rgba(110, 84, 236, 0.4);
 }
 
-#reset-btn:hover::before {
+#reset-btn:hover::before, #menu-btn:hover::before {
     left: 0;
 }
 
-#reset-btn:active {
+#reset-btn:active, #menu-btn:active {
     transform: translate(-50%, -50%) scale(0.95);
     box-shadow: 0 5px 15px rgba(110, 84, 236, 0.3);
 }
