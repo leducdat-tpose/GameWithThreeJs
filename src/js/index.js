@@ -38,12 +38,16 @@ class Game {
 
         // Thêm sự kiện cho nút "C" để chuyển đổi góc nhìn
         document.addEventListener("keydown", (event) => {
-    if ((event.key === "C" || event.key === "c")) {
-        this.vision = this.vision === 3 ? 1 : 3;
-    }
-});
+            if ((event.key === "C" || event.key === "c")) {
+                this.vision = this.vision === 3 ? 1 : 3;
+            }
+        });
 
-        this.init();
+        // Chờ người dùng chọn xe
+        this.selectPlayer((vehicleType) => {
+            this.loadPlayer(vehicleType);
+            this.init();  // Khởi tạo các thành phần sau khi chọn xe
+        });
     }
 
     init() {
@@ -53,11 +57,7 @@ class Game {
         this.initLights();
         this.initGround();
         this.preloadRockModel();
-
-        // Chờ người dùng chọn xe
-        this.selectPlayer((vehicleType) => {
-            this.loadPlayer(vehicleType);
-        });
+        this.scoreElement.style.display = 'flex';  // Hiển thị bảng điểm  
     }
 
 
@@ -73,7 +73,7 @@ class Game {
     initRenderer() {
         this.renderer = new THREE.WebGLRenderer({ alpha: true });
         this.renderer.setClearColor(0xffffff, 1);
-        this.renderer.setSize(window.innerWidth * 0.85, window.innerHeight * 0.85);
+        this.renderer.setSize(window.innerWidth * 1, window.innerHeight * 1);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById("ThreeJS").appendChild(this.renderer.domElement);
