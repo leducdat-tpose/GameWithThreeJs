@@ -26,6 +26,7 @@ class Game {
         this.gameInitialized = false; // Theo dõi trạng thái khởi tạo
         this.animationId = null; // Để quản lý animation loop
 
+        this.playerSpeed = 2;
         this.rockSpeed = 5;  // Tốc độ vật cản
         this.rockScale = 30;  // Kích thước
         this.vision = 3;
@@ -338,6 +339,13 @@ class Game {
         this.controls.update();
     }
 
+    increaseSpeed() {
+        if ((this.score % 50) === 0 && this.score !== 0) {
+            this.playerSpeed += 0.1;
+            this.rockSpeed += 0.2;
+        }
+    }
+
     animate() {
         if (!this.crash) {
             requestAnimationFrame(this.animate.bind(this)); // Chỉ request frame khi chưa crash
@@ -384,19 +392,18 @@ class Game {
         }
 
         // Xử lý di chuyển từ bàn phím
-        const move = 2;
         if (this.player) {
             if (this.keyboard.pressed("left") || this.keyboard.pressed("A")) {
-                if (this.player.position.x > -270) this.player.position.x -= move;
+                if (this.player.position.x > -270) this.player.position.x -= this.playerSpeed;
             }
             if (this.keyboard.pressed("right") || this.keyboard.pressed("D")) {
-                if (this.player.position.x < 270) this.player.position.x += move;
+                if (this.player.position.x < 270) this.player.position.x += this.playerSpeed;
             }
             if (this.keyboard.pressed("up") || this.keyboard.pressed("W")) {
-                if (this.player.position.z > -1000) this.player.position.z -= move * 2;
+                if (this.player.position.z > -1000) this.player.position.z -= this.playerSpeed * 2;
             }
             if (this.keyboard.pressed("down") || this.keyboard.pressed("S")) {
-                if (this.player.position.z < 500) this.player.position.z += move * 2;
+                if (this.player.position.z < 100) this.player.position.z += this.playerSpeed * 2;
             }
         }
 
@@ -441,6 +448,8 @@ class Game {
                 return isColliding;
             });
         }
+
+        this.increaseSpeed();
 
         this.switchCamera();
     }
@@ -493,6 +502,10 @@ class Game {
             this.player.position.set(0, -25, -20);
         }
 
+        // Reset speed
+        this.playerSpeed = 2;
+        this.rockSpeed = 5;
+
         this.clock.start();
 
         // Tiếp tục chạy lại animation
@@ -522,6 +535,8 @@ class Game {
         this.crash = false;
         this.lastScoreUpdateTime = 0;
         document.getElementById("ThreeJS").style.display = 'none';
+        this.playerSpeed = 2;
+        this.rockSpeed = 5;
 
         // Xóa tất cả obstacles
         this.obstacles.forEach(obj => this.scene.remove(obj));
