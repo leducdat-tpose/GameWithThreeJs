@@ -9,6 +9,7 @@ class Game {
         this.camera = null;
         this.renderer = null;
         this.controls = null;
+        this.enableDebug = false;
         this.keyboard = new THREEx.KeyboardState();
         this.clock = new THREE.Clock();   // Đồng hồ đo thời gian
         this.score = 0;
@@ -405,6 +406,9 @@ class Game {
             if (this.keyboard.pressed("down") || this.keyboard.pressed("S")) {
                 if (this.player.position.z < 100) this.player.position.z += this.playerSpeed * 2;
             }
+            if(this.keyboard.pressed("b")){
+                this.enableDebug = !this.enableDebug;
+            }
         }
 
         // this.camera.position.set(0, 170, 400);
@@ -419,7 +423,7 @@ class Game {
         for (let i = 0; i < this.obstacles.length; i++) {
             const rock = this.obstacles[i];
             rock.position.z += this.rockSpeed;  
-
+            this.DebugBBox(this.scene, rock);
             if (rock.position.z > this.camera.position.z) {
                 this.scene.remove(rock);
                 this.obstacles.splice(i, 1);
@@ -431,15 +435,7 @@ class Game {
         // Kiểm tra va chạm 
         if (this.player) {
             const playerBox = new THREE.Box3().setFromObject(this.player);
-
-            // Hiển thị bounding box để quan sát
-            // const helper = new THREE.Box3Helper(playerBox, 0xff0000);
-            // this.scene.add(helper);
-            
-            // // Xóa helper cũ ở frame tiếp theo
-            // setTimeout(() => {
-            //     this.scene.remove(helper);
-            // }, 0);
+            this.DebugBBox(this.scene, this.player);
 
             this.crash = this.colliders.some(obj => {
                 const box = new THREE.Box3().setFromObject(obj);
@@ -584,6 +580,19 @@ class Game {
         this.scene.add(rock);
         this.obstacles.push(rock);
         this.colliders.push(rock);
+    }
+    
+    DebugBBox(scene, object)
+    {
+        if(!this.enableDebug) return;
+        const objectBBox = new THREE.Box3().setFromObject(object);
+
+        const helper = new THREE.Box3Helper(objectBBox, 0xff0000);
+        scene.add(helper);
+        
+        setTimeout(() => {
+            scene.remove(helper);
+        }, 0);
     }
 }
 
