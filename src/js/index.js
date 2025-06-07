@@ -17,12 +17,19 @@ class Game {
         this.resetBtn = document.getElementById('reset-btn');  // Tham chiếu nút reset
         this.menuBtn = document.getElementById('menu-btn');  // Tham chiếu nút menu
         this.lastScoreUpdateTime = 0;
+        this.lastProjectileSpawn = 0;
+        this.shooterCD = 5;
 
         this.player = null;  // Đối tượng người chơi
         this.vehicleType = null; // Loại xe
         this.rockModel = null;  // Vật cản
+        this.shooterModel = null;
+        this.ammoModel = null;
+        this.shooter = null;
+        this.spawnShooterOnce = false;
         this.obstacles = [];  // Danh sách vật cản
         this.colliders = [];  // Danh sách va chạm
+        this.projectiles = [];
         this.crash = false;
         this.gameInitialized = false; // Theo dõi trạng thái khởi tạo
         this.animationId = null; // Để quản lý animation loop
@@ -31,7 +38,9 @@ class Game {
         this.rockSpeed = 5;  // Tốc độ vật cản
         this.rockScale = 30;  // Kích thước
         this.vision = 3;
-
+        this.shooterScale = 150;
+        this.ammoScale = 25;
+        this.ammoSpeed = 15;
         this.loader = new GLTFLoader();
 
         // Thêm sự kiện cho nút reset
@@ -77,6 +86,8 @@ class Game {
         this.initLights();
         this.initGround();
         this.preloadRockModel();
+        this.preloadShooter();
+        this.preloadProjectile();
         this.scoreElement.style.display = 'flex';  // Hiển thị bảng điểm  
         document.getElementById("ThreeJS").style.display = 'flex';
     }
@@ -255,6 +266,49 @@ class Game {
         });
     }
 
+    preloadShooter(onLoaded)
+    {
+        this.loader.load('./assets/shooter_1.glb', (gltf) => {
+            this.shooterModel = gltf.scene;
+            this.shooterModel.scale.set(this.shooterScale, this.shooterScale, this.shooterScale);
+            this.shooterModel.position.set(0, -150, -3000);
+            this.shooterModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.material.side = THREE.DoubleSide;
+                }
+            });
+
+            console.log('Shooter model loaded');
+            if (onLoaded) onLoaded();
+        }, undefined, (error) => {
+            console.error('Loading Rock.glb:', error);
+        });
+        
+    }
+
+    preloadProjectile(onLoaded)
+        {
+            this.loader.load('./assets/ammo.glb', (gltf) => {
+                this.ammoModel = gltf.scene;
+                this.ammoModel.scale.set(this.ammoScale, this.ammoScale, this.ammoScale);
+                this.ammoModel.position.set(0, -25, -20);
+                this.ammoModel.rotation.y = -Math.PI/2;
+                this.ammoModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        child.material.side = THREE.DoubleSide;
+                    }
+                });
+                console.log('Ammo model loaded');
+                if (onLoaded) onLoaded();
+            }, undefined, (error) => {
+                console.error('Loading ammo model:', error);
+            });
+            
+        }
 
     // Tải model người chơi (car)
     loadPlayer(vehicleType) {
@@ -273,7 +327,7 @@ class Game {
             this.player.scale.set(0.25, 0.25, 0.25);
             this.player.position.set(0, -30, -20);
             this.player.rotation.y = Math.PI;
-            //this.player.rotation.x = Math.PI / 2;
+//            this.player.rotation.x = Math.PI / 2;
 
             this.player.traverse(child => {
                 if (child.isMesh) {
@@ -289,7 +343,8 @@ class Game {
             console.error('Lỗi khi tải model:', error);
         });
 
-        } else if (vehicleType === 'bus') {
+        } 
+        else if (vehicleType === 'bus') {
             modelPath = './assets/SCHOOL_BUS.glb';
             this.loader.load(modelPath, gltf => {
             this.player = gltf.scene;
@@ -313,7 +368,8 @@ class Game {
         });
 
 
-        } else {
+        } 
+        else {
             console.error('Loại xe không hợp lệ!');
             return;
         }
@@ -344,6 +400,7 @@ class Game {
         if ((this.score % 50) === 0 && this.score !== 0) {
             this.playerSpeed += 0.1;
             this.rockSpeed += 0.2;
+            this.ammoSpeed += 0.3;
         }
     }
 
@@ -431,6 +488,8 @@ class Game {
                 i--;
             }
         }
+        this.ShooterController(this.shooter);
+        this.ProjectileController();
 
         // Kiểm tra va chạm 
         if (this.player) {
@@ -492,7 +551,9 @@ class Game {
         this.obstacles.forEach(obj => this.scene.remove(obj));
         this.obstacles = [];
         this.colliders = [];
-
+        this.projectiles.forEach(projectile => this.scene.remove(projectile));
+        this.projectiles = [];
+        
         // Reset vị trí player về mặc định
         if (this.player) {
             this.player.position.set(0, -25, -20);
@@ -501,6 +562,8 @@ class Game {
         // Reset speed
         this.playerSpeed = 2;
         this.rockSpeed = 5;
+        this.ammoSpeed = 15;
+        this.lastProjectileSpawn = 0;
 
         this.clock.start();
 
@@ -582,6 +645,80 @@ class Game {
         this.colliders.push(rock);
     }
     
+    spawnShooter() {
+        if (!this.shooterModel) {
+            console.warn("Cannot load shooter model");
+            return;
+        }
+        const shooterInstance = this.shooterModel.clone(true);
+        this.scene.add(shooterInstance);
+        this.shooter = shooterInstance;
+        this.spawnShooterOnce = true;
+    }
+    
+    spawnProjectile(shooterPosition)
+    {
+        if(!this.ammoModel)
+        {
+            console.warn("Cannot load ammo model");
+            return;
+        }
+        const projectile = this.ammoModel.clone(true);
+        projectile.position.x = shooterPosition.x;
+        projectile.position.z = shooterPosition.z;
+        this.scene.add(projectile);
+        this.projectiles.push(projectile);
+        
+        projectile.initialTargetPosition = new THREE.Vector3().copy(this.player.position);
+        
+        const direction = new THREE.Vector3();
+        direction.subVectors(projectile.initialTargetPosition, projectile.position).normalize();
+        
+        projectile.velocity = direction.multiplyScalar(this.ammoSpeed);
+        
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 0, -1), direction.clone().normalize());
+        projectile.rotation.setFromQuaternion(quaternion);
+        
+        this.colliders.push(projectile);
+    }
+
+    
+    ShooterController()
+    {
+        if(this.shooterModel && this.spawnShooterOnce == false)
+        {
+            this.spawnShooter();
+        }
+        const currentTime = this.clock.getElapsedTime();
+        if(currentTime - this.lastProjectileSpawn >= this.shooterCD) {
+            this.spawnProjectile(this.shooter.position);
+            this.lastProjectileSpawn = currentTime;
+        }
+    }
+
+    ProjectileController()
+    {
+        const delta = this.clock.getDelta();
+        
+        for (let i = 0; i < this.projectiles.length; i++) {
+            const projectile = this.projectiles[i];
+            
+            projectile.position.add(projectile.velocity);
+            
+            this.DebugBBox(this.scene, projectile);
+            
+            if (projectile.position.z > this.camera.position.z + 500) {
+                this.scene.remove(projectile);
+                this.projectiles.splice(i, 1);
+                this.colliders.splice(i, 1);
+                i--;
+            }
+        }
+    }
+
+
+
     DebugBBox(scene, object)
     {
         if(!this.enableDebug) return;
