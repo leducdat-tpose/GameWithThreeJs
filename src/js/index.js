@@ -677,7 +677,7 @@ class Game {
         projectile.velocity = direction.multiplyScalar(this.ammoSpeed);
         
         const quaternion = new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 0, -1), direction.clone().normalize());
+            new THREE.Vector3(1, 0, 0), direction.clone().normalize());
         projectile.rotation.setFromQuaternion(quaternion);
         
         this.colliders.push(projectile);
