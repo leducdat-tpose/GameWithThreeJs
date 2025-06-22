@@ -140,7 +140,7 @@ class Game {
         this.scene.add(ambient);
 
         // Directional light - ánh sáng chính như mặt trời
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); // tăng cường độ sáng
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 5.0); // tăng cường độ sáng
         directionalLight.position.set(300, 400, 300);
         directionalLight.target.position.set(0, 0, 0);
 
@@ -380,13 +380,13 @@ class Game {
         if (this.vision === 1 && this.player) {
             this.camera.position.set(
                 this.player.position.x,
-                this.player.position.y + 20,
+                this.player.position.y + 50,
                 this.player.position.z - 40 
             );
             // Set the point that the camera will always look at
             this.controls.target.set(
                 this.player.position.x,
-                this.player.position.y + 20,
+                this.player.position.y + 50,
                 this.player.position.z - 200
             ); 
         } else {
